@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# 🏫 CampusFix
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> **Report. Track. Resolve.**
 
-Currently, two official plugins are available:
+CampusFix is a campus infrastructure issue reporting and management platform designed to make it easier for students and staff to report problems and for maintenance teams and administrators to track and resolve them efficiently.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Instead of relying on verbal complaints or scattered communication, CampusFix provides a centralized system where campus issues can be reported, tracked, approved, updated, and resolved transparently.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ✨ Features
 
-## Expanding the Oxlint configuration
+### 👨‍🎓 Students
+- Create and report new campus issues
+- Select issue category and location
+- Set issue priority
+- Add detailed descriptions
+- Track issue status and progress
+- View previously reported issues
+- Follow the complete resolution timeline
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+### 👷 Staff / Maintenance
+- View reported campus issues
+- Review issue details
+- Request approval for issue resolution
+- Update issue progress
+- Add resolution notes
+- Track assigned issues
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+### 🛡️ Administrators
+- View and manage reported issues
+- Approve staff requests
+- Grant authorization for issue resolution
+- Monitor issue progress
+- Track activity and resolution history
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 📊 Issue Tracking
+CampusFix supports a complete issue lifecycle:
+
+```text
+Reported
+   ↓
+Pending Approval
+   ↓
+In Progress
+   ↓
+Resolved
