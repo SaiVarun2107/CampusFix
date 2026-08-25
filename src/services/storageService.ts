@@ -425,3 +425,76 @@ export const calculateCategoryStats = (issues: Issue[]): CategoryStat[] => {
     color: categoryMap[cat].color
   }));
 };
+
+const STORAGE_KEY_NOTIF = 'campusfix_notifications_v1';
+
+export const INITIAL_NOTIFICATIONS: import('../types').NotificationItem[] = [
+  {
+    id: 'notif-1',
+    targetRole: 'staff',
+    title: '🛡️ Work Authorization Granted',
+    message: 'Admin (Dr. Eleanor Vance) APPROVED work for ticket #CF1024 (Projector not working): "Approved for bulb replacement."',
+    issueId: 'issue-1024',
+    ticketNumber: '#CF1024',
+    type: 'approval',
+    timestamp: '1 hour ago',
+    read: false
+  },
+  {
+    id: 'notif-2',
+    targetRole: 'staff',
+    title: '🛡️ Admin Work Approval Granted',
+    message: 'Admin (Dr. Eleanor Vance) APPROVED work for ticket #CF1024 (Projector not working): "Approved for immediate fix".',
+    issueId: 'issue-1024',
+    ticketNumber: '#CF1024',
+    type: 'approval',
+    timestamp: '1 hour ago',
+    read: false
+  },
+  {
+    id: 'notif-3',
+    targetRole: 'student',
+    targetUserId: 'user_student_1',
+    title: '🔧 Progress Updated (45%)',
+    message: 'Work progress on your report #CF1024 (Projector not working) updated to 45%.',
+    issueId: 'issue-1024',
+    ticketNumber: '#CF1024',
+    type: 'progress',
+    timestamp: '20 mins ago',
+    read: false
+  },
+  {
+    id: 'notif-4',
+    targetRole: 'student',
+    targetUserId: 'user_student_1',
+    title: '🎉 Issue Resolved!',
+    message: 'Your reported issue #CF4928 (HVAC Air Cooling Repair) was marked fully resolved (100%).',
+    issueId: 'issue-4928',
+    ticketNumber: '#CF4928',
+    type: 'resolved',
+    timestamp: 'Yesterday',
+    read: true
+  }
+];
+
+export const getStoredNotifications = (): import('../types').NotificationItem[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_NOTIF);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY_NOTIF, JSON.stringify(INITIAL_NOTIFICATIONS));
+      return INITIAL_NOTIFICATIONS;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to read notifications from storage', e);
+    return INITIAL_NOTIFICATIONS;
+  }
+};
+
+export const saveNotificationsToStorage = (notifications: import('../types').NotificationItem[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY_NOTIF, JSON.stringify(notifications));
+  } catch (e) {
+    console.error('Failed to save notifications to storage', e);
+  }
+};

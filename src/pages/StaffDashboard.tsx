@@ -1,28 +1,41 @@
 import React, { useState } from 'react';
 import { 
-  Wrench, Search, Eye
+  Wrench, Search, Eye, Bell, ShieldCheck
 } from 'lucide-react';
-import type { Issue, User } from '../types';
+import type { Issue, User, NotificationItem, UserRole } from '../types';
 
 interface StaffDashboardProps {
   currentUser: User;
   issues: Issue[];
+  notifications?: NotificationItem[];
   onSelectIssue: (issue: Issue) => void;
   onRequestApproval: (issueId: string) => void;
   onUpdateProgress: (issueId: string, progress: number, notes: string) => void;
   onOpenSettings: () => void;
+  onMarkNotificationRead?: (id: string) => void;
+  onMarkAllNotificationsRead?: (role: UserRole, userId?: string) => void;
 }
 
 export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   currentUser,
   issues,
+  notifications = [],
   onSelectIssue,
   onRequestApproval,
   onUpdateProgress,
-  onOpenSettings
+  onOpenSettings,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead
 }) => {
   const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'approval' | 'in-progress' | 'resolved'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority' | 'progress'>('newest');
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  const staffNotifications = notifications.filter(n => n.targetRole === 'staff');
+  const unreadCount = staffNotifications.filter(n => !n.read).length;
 
   const stats = {
     total: issues.length,
@@ -32,17 +45,37 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     resolved: issues.filter(i => i.status === 'Resolved').length
   };
 
-  const filteredIssues = issues.filter(issue => {
-    if (filterTab === 'pending') return issue.status === 'Pending';
-    if (filterTab === 'approval') return issue.status === 'Pending Approval';
-    if (filterTab === 'in-progress') return issue.status === 'In Progress';
-    if (filterTab === 'resolved') return issue.status === 'Resolved';
-    return true;
-  }).filter(i =>
-    i.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.location.block.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.reporter.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredIssues = issues
+    .filter(issue => {
+      if (filterTab === 'pending') return issue.status === 'Pending';
+      if (filterTab === 'approval') return issue.status === 'Pending Approval';
+      if (filterTab === 'in-progress') return issue.status === 'In Progress';
+      if (filterTab === 'resolved') return issue.status === 'Resolved';
+      return true;
+    })
+    .filter(i => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesQuery = !q ||
+        i.title.toLowerCase().includes(q) ||
+        i.ticketNumber.toLowerCase().includes(q) ||
+        i.location.block.toLowerCase().includes(q) ||
+        i.reporter.name.toLowerCase().includes(q);
+
+      const matchesCat = categoryFilter === 'all' || i.category === categoryFilter;
+      const matchesPrio = priorityFilter === 'all' || i.priority === priorityFilter;
+
+      return matchesQuery && matchesCat && matchesPrio;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sortBy === 'priority') {
+        const pMap: Record<string, number> = { Urgent: 4, High: 3, Medium: 2, Low: 1 };
+        return (pMap[b.priority] || 0) - (pMap[a.priority] || 0);
+      }
+      if (sortBy === 'progress') return b.progressPercent - a.progressPercent;
+      return 0;
+    });
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: '1280px', margin: '0 auto' }}>
@@ -76,7 +109,137 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+          {/* Admin Approval Notification Symbol for Staff */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setIsNotifOpen(prev => !prev)}
+              className="btn btn-secondary"
+              style={{ 
+                padding: '8px 14px', 
+                fontSize: '0.85rem', 
+                fontWeight: 700, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px',
+                borderColor: unreadCount > 0 ? '#7e22ce' : '#cbd5e1',
+                backgroundColor: unreadCount > 0 ? '#faf5ff' : '#ffffff',
+                color: unreadCount > 0 ? '#7e22ce' : '#475569',
+                position: 'relative'
+              }}
+            >
+              <Bell size={16} color={unreadCount > 0 ? '#7e22ce' : '#475569'} />
+              <span>Admin Approvals</span>
+              {unreadCount > 0 && (
+                <span style={{
+                  backgroundColor: '#7e22ce',
+                  color: '#ffffff',
+                  fontSize: '0.7rem',
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: '10px',
+                  boxShadow: '0 2px 6px rgba(126, 34, 206, 0.4)'
+                }}>
+                  {unreadCount} NEW
+                </span>
+              )}
+            </button>
+
+            {/* Staff Notifications Dropdown Panel */}
+            {isNotifOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '46px',
+                right: '0',
+                width: '380px',
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+                border: '1px solid #e2e8f0',
+                zIndex: 100,
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  padding: '14px 18px',
+                  backgroundColor: '#faf5ff',
+                  borderBottom: '1px solid #e9d5ff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldCheck size={18} color="#7e22ce" />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#7e22ce' }}>Admin Work Approvals</span>
+                  </div>
+                  {onMarkAllNotificationsRead && (
+                    <button
+                      onClick={() => onMarkAllNotificationsRead('staff')}
+                      style={{ background: 'none', border: 'none', color: '#7e22ce', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
+                  {staffNotifications.length === 0 ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    staffNotifications.map((notif) => {
+                      const matchingIssue = issues.find(i => i.id === notif.issueId || i.ticketNumber === notif.ticketNumber);
+                      return (
+                        <div
+                          key={notif.id}
+                          onClick={() => {
+                            if (onMarkNotificationRead) onMarkNotificationRead(notif.id);
+                            if (matchingIssue) onSelectIssue(matchingIssue);
+                            setIsNotifOpen(false);
+                          }}
+                          style={{
+                            padding: '14px 16px',
+                            borderBottom: '1px solid #f1f5f9',
+                            backgroundColor: notif.read ? '#ffffff' : '#faf5ff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            gap: '12px'
+                          }}
+                        >
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: '#f3e8ff',
+                            color: '#7e22ce',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            fontSize: '0.9rem'
+                          }}>
+                            🛡️
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                                {notif.title}
+                              </h4>
+                              <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{notif.timestamp}</span>
+                            </div>
+                            <p style={{ fontSize: '0.78rem', color: '#475569', margin: '4px 0 0 0', lineHeight: 1.3 }}>
+                              {notif.message}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>
             Logged in as: <b>{currentUser.name}</b> ({currentUser.designation || 'Staff'})
           </span>
@@ -183,17 +346,63 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           ))}
         </div>
 
-        {/* Search Bar */}
-        <div style={{ position: 'relative', width: '280px' }}>
-          <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Search by title, building, reporter..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: '38px', fontSize: '0.82rem' }}
-          />
+        {/* Search & Filter Dropdowns Bar */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+          {/* Search Bar */}
+          <div style={{ position: 'relative', width: '220px' }}>
+            <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Search title, ticket #, reporter..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: '36px', fontSize: '0.82rem', height: '36px' }}
+            />
+          </div>
+
+          {/* Category Dropdown */}
+          <select
+            className="form-select"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', minWidth: '150px' }}
+          >
+            <option value="all">All Categories</option>
+            <option value="IT & AV Equipment">IT & AV Equipment</option>
+            <option value="Plumbing & Water">Plumbing & Water</option>
+            <option value="Electrical & Lighting">Electrical & Lighting</option>
+            <option value="HVAC & Cooling">HVAC & Cooling</option>
+            <option value="Furniture & Carpentry">Furniture & Carpentry</option>
+            <option value="Campus Infrastructure">Campus Infrastructure</option>
+          </select>
+
+          {/* Priority Dropdown */}
+          <select
+            className="form-select"
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '130px' }}
+          >
+            <option value="all">All Priorities</option>
+            <option value="Urgent">Urgent</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+
+          {/* Sort By Dropdown */}
+          <select
+            className="form-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '150px', fontWeight: 700, color: '#0066ff' }}
+          >
+            <option value="newest">🕒 Newest First</option>
+            <option value="oldest">⏳ Oldest First</option>
+            <option value="priority">⚡ Priority (High → Low)</option>
+            <option value="progress">📊 Progress %</option>
+          </select>
         </div>
       </div>
 

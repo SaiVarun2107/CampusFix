@@ -137,6 +137,58 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// 2.2 Update Full User Profile in Database
+app.put('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, department, year, vtuNo, ttsNo, designation } = req.body;
+
+  if (!name || name.trim().length < 2) {
+    return res.status(400).json({ error: 'Name must be at least 2 characters.' });
+  }
+
+  const cleanName = name.trim();
+  const cleanVtu = vtuNo ? vtuNo.trim().toUpperCase() : null;
+  const cleanTts = ttsNo ? ttsNo.trim().toUpperCase() : null;
+  const cleanDept = department ? department.trim() : null;
+  const cleanYear = year ? year.trim() : null;
+  const cleanDesig = designation ? designation.trim() : null;
+
+  try {
+    const [existing] = await dbPool.query('SELECT * FROM users WHERE id = ?', [id]);
+
+    if (existing.length === 0) {
+      await dbPool.query(
+        `INSERT INTO users (id, name, email, password_hash, role, department, year, vtu_no, tts_no, designation, avatar_url)
+         VALUES (?, ?, 'user@university.edu', 'pass123', 'student', ?, ?, ?, ?, ?, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250')`,
+        [id, cleanName, cleanDept, cleanYear, cleanVtu, cleanTts, cleanDesig]
+      );
+    } else {
+      await dbPool.query(
+        `UPDATE users 
+         SET name = ?, department = ?, year = ?, vtu_no = ?, tts_no = ?, designation = ?
+         WHERE id = ?`,
+        [cleanName, cleanDept, cleanYear, cleanVtu, cleanTts, cleanDesig, id]
+      );
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id,
+        name: cleanName,
+        department: cleanDept,
+        year: cleanYear,
+        vtuNo: cleanVtu,
+        ttsNo: cleanTts,
+        designation: cleanDesig
+      }
+    });
+  } catch (err) {
+    console.error('Error updating user profile in database:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 3. Auth: Sign Up
 app.post('/api/auth/signup', async (req, res) => {
   const { name, email, password, role, department, year, vtuNo, ttsNo, designation } = req.body;
@@ -151,17 +203,17 @@ app.post('/api/auth/signup', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 6 characters.' });
   }
 
-  // Validate VTU No for Students
+  // Mandatory VTU No for Students
   if (role === 'student') {
-    if (!vtuNo || !/^vtu\d+$/i.test(vtuNo.trim())) {
-      return res.status(400).json({ error: 'Please enter a valid VTU No. (e.g. VTU30363).' });
+    if (!vtuNo || vtuNo.trim().length < 2) {
+      return res.status(400).json({ error: 'VTU No. (College Student ID) is mandatory for students.' });
     }
   }
 
-  // Validate TTS No for Staff
+  // Mandatory TTS No for Staff
   if (role === 'staff') {
-    if (!ttsNo || ttsNo.trim().length < 3) {
-      return res.status(400).json({ error: 'Please enter a valid college TTS Number.' });
+    if (!ttsNo || ttsNo.trim().length < 2) {
+      return res.status(400).json({ error: 'TTS Number (College Staff ID) is mandatory for staff.' });
     }
   }
 
@@ -235,7 +287,7 @@ app.get('/api/issues', async (req, res) => {
 
 // 5. Create New Issue (Student)
 app.post('/api/issues', async (req, res) => {
-  const { title, category, location, description, priority, attachmentUrl, reporterId, reporterName } = req.body;
+  const { title, category, location, description, priority, attachmentUrl, reporterId, reporterName, reporterEmail, reporterDept } = req.body;
 
   if (!title || !description || !location?.room || !reporterId) {
     return res.status(400).json({ error: 'Missing required issue fields.' });
@@ -253,6 +305,15 @@ app.post('/api/issues', async (req, res) => {
   }
 
   try {
+    // Ensure reporter exists in users table to prevent FK constraint failure
+    if (reporterId) {
+      await dbPool.query(
+        `INSERT IGNORE INTO users (id, name, email, password_hash, role, department, avatar_url)
+         VALUES (?, ?, ?, 'student123', 'student', ?, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250')`,
+        [reporterId, reporterName || 'Student', reporterEmail || `${reporterId}@university.edu`, reporterDept || 'Student']
+      );
+    }
+
     await dbPool.query(
       `INSERT INTO issues (id, ticket_number, title, category, block, floor, room, description, priority, attachment_url, status, progress_percent, reporter_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0, ?)`,

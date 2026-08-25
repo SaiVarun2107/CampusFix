@@ -47,9 +47,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
 
     // Role-specific ID validations
     if (role === 'student') {
-      const vtuRegex = /^vtu\d+$/i;
-      if (!vtuNo.trim() || !vtuRegex.test(vtuNo.trim())) {
-        setErrorMessage('Please enter a valid VTU No. in format VTU30363 (starts with VTU or vtu followed by numbers).');
+      if (!vtuNo.trim() || vtuNo.trim().length < 2) {
+        setErrorMessage('VTU No. (College Student ID) is mandatory for student registration.');
         return;
       }
     } else {

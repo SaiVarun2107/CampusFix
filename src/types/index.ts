@@ -99,3 +99,16 @@ export interface CampusStats {
   satisfactionRate: number;
   activeMembers: number;
 }
+
+export interface NotificationItem {
+  id: string;
+  targetRole: UserRole;
+  targetUserId?: string;
+  title: string;
+  message: string;
+  issueId: string;
+  ticketNumber: string;
+  type: 'approval' | 'progress' | 'resolved' | 'report';
+  timestamp: string;
+  read: boolean;
+}

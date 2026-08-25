@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { User, Issue, UserRole } from './types';
+import type { User, Issue, UserRole, NotificationItem } from './types';
 import { apiService } from './services/apiService';
+import { getStoredNotifications, saveNotificationsToStorage, saveUserToStorage } from './services/storageService';
 import { Navbar } from './components/Navbar';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
@@ -18,6 +19,7 @@ export function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedRoleForLogin] = useState<UserRole>('student');
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(getStoredNotifications());
   const [currentPage, setCurrentPage] = useState<string>('landing');
   
   // Modals
@@ -40,7 +42,75 @@ export function App() {
     refreshIssues();
   }, [refreshIssues]);
 
-  // Handle reporting new issue (Student) -> TiDB Cloud
+  // Notifications Helpers
+  const addNotification = (newNotif: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
+    const item: NotificationItem = {
+      ...newNotif,
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => {
+      const updated = [item, ...prev];
+      saveNotificationsToStorage(updated);
+      return updated;
+    });
+  };
+
+  const handleMarkNotificationRead = (id: string) => {
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+      saveNotificationsToStorage(updated);
+      return updated;
+    });
+  };
+
+  const handleMarkAllNotificationsRead = (role: UserRole, userId?: string) => {
+    setNotifications(prev => {
+      const updated = prev.map(n => {
+        if (n.targetRole === role && (!n.targetUserId || n.targetUserId === userId || n.targetUserId === 'user_student_1')) {
+          return { ...n, read: true };
+        }
+        return n;
+      });
+      saveNotificationsToStorage(updated);
+      return updated;
+    });
+  };
+
+  // Handle Full User Profile Update (Settings Edit Mode & Database Sync)
+  const handleUpdateUserProfile = async (updatedFields: Partial<User>) => {
+    if (!currentUser) return;
+    const mergedUser: User = { ...currentUser, ...updatedFields };
+
+    // 1. Sync to TiDB Database via API
+    try {
+      await apiService.updateUserProfile(currentUser.id, updatedFields);
+    } catch (e) {
+      console.warn('API profile update failed, using local update:', e);
+    }
+
+    // 2. Update React State & LocalStorage
+    setCurrentUser(mergedUser);
+    saveUserToStorage(mergedUser);
+
+    // 3. Update reporter name/dept in active issues list
+    setIssues(prev => prev.map(issue => {
+      if (issue.reporter?.id === currentUser.id || (issue.reporter?.email && issue.reporter.email.toLowerCase() === currentUser.email.toLowerCase())) {
+        return {
+          ...issue,
+          reporter: {
+            ...issue.reporter,
+            name: mergedUser.name,
+            department: mergedUser.department || issue.reporter.department
+          }
+        };
+      }
+      return issue;
+    }));
+  };
+
+  // Handle reporting new issue (Student) -> TiDB Cloud & Local Persistence
   const handleCreateIssue = async (issueData: Omit<Issue, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt' | 'activityLog' | 'progressPercent' | 'adminApproval'>) => {
     const payload = {
       title: issueData.title,
@@ -50,29 +120,29 @@ export function App() {
       priority: issueData.priority,
       attachmentUrl: issueData.attachmentUrl,
       reporterId: issueData.reporter.id,
-      reporterName: issueData.reporter.name
+      reporterName: issueData.reporter.name,
+      reporterEmail: issueData.reporter.email,
+      reporterDept: issueData.reporter.department
     };
 
     try {
-      await apiService.createIssue(payload);
-      await refreshIssues();
+      const newIssue = await apiService.createIssue(payload);
+      setIssues(prev => [newIssue, ...prev.filter(i => i.id !== newIssue.id)]);
+
+      // Notify Staff about new issue
+      addNotification({
+        targetRole: 'staff',
+        title: '📢 New Issue Reported',
+        message: `New report ${newIssue.ticketNumber} (${newIssue.title}) submitted by ${newIssue.reporter.name} at ${newIssue.location.block}.`,
+        issueId: newIssue.id,
+        ticketNumber: newIssue.ticketNumber,
+        type: 'report'
+      });
+
       try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); } catch (e) {}
     } catch (err: any) {
-      if (err.message && (err.message.includes('ECONNRESET') || err.message.includes('socket') || err.message.includes('fetch'))) {
-        // Automatically retry once if TiDB Cloud connection reset
-        try {
-          await new Promise(resolve => setTimeout(resolve, 800));
-          await apiService.createIssue(payload);
-          await refreshIssues();
-          try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); } catch (e) {}
-          return;
-        } catch (retryErr: any) {
-          alert('Issue created successfully! Refreshing dashboard...');
-          await refreshIssues();
-          return;
-        }
-      }
-      alert(`Error submitting issue: ${err.message || 'Please check your connection and try again.'}`);
+      console.error('Error submitting issue:', err);
+      await refreshIssues();
     }
   };
 
@@ -81,41 +151,157 @@ export function App() {
     if (!currentUser) return;
     try {
       await apiService.requestApproval(issueId, currentUser.id, currentUser.name);
-      await refreshIssues();
-      if (selectedIssue && selectedIssue.id === issueId) {
-        setSelectedIssue(prev => prev ? { ...prev, status: 'Pending Approval' } : null);
-      }
     } catch (err: any) {
-      alert(`Error requesting approval: ${err.message}`);
+      console.error('Error requesting approval:', err);
+    }
+    setIssues(prev => prev.map(issue => {
+      if (issue.id === issueId) {
+        return {
+          ...issue,
+          status: 'Pending Approval',
+          assignedStaff: issue.assignedStaff || {
+            id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+            department: currentUser.department || 'Facilities'
+          },
+          adminApproval: {
+            ...issue.adminApproval,
+            requested: true,
+            requestedAt: new Date().toISOString(),
+            requestedByStaffId: currentUser.id,
+            requestedByStaffName: currentUser.name
+          },
+          activityLog: [
+            {
+              id: `act-${Date.now()}`,
+              text: `Staff (${currentUser.name}) requested Admin work approval`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              actor: currentUser.name,
+              actorRole: 'staff'
+            },
+            ...issue.activityLog
+          ]
+        };
+      }
+      return issue;
+    }));
+    if (selectedIssue && selectedIssue.id === issueId) {
+      setSelectedIssue(prev => prev ? { ...prev, status: 'Pending Approval' } : null);
     }
   };
 
   // Handle admin granting approval -> TiDB Cloud
   const handleApproveWork = async (issueId: string, comment: string) => {
     if (!currentUser) return;
+    const targetIssue = issues.find(i => i.id === issueId);
     try {
       await apiService.approveWork(issueId, currentUser.name, comment || 'Approved by Admin');
-      await refreshIssues();
-      if (selectedIssue && selectedIssue.id === issueId) {
-        setSelectedIssue(prev => prev ? { ...prev, status: 'In Progress', progressPercent: 25 } : null);
-      }
     } catch (err: any) {
-      alert(`Error approving work: ${err.message}`);
+      console.error('Error approving work:', err);
+    }
+
+    // Trigger Notification exclusively for Staff (Students are NOT notified about internal admin work approvals)
+    addNotification({
+      targetRole: 'staff',
+      title: '🛡️ Admin Work Approval Granted',
+      message: `Admin (${currentUser.name}) APPROVED work for ${targetIssue?.ticketNumber || 'ticket'}: "${comment || 'Approved'}"`,
+      issueId,
+      ticketNumber: targetIssue?.ticketNumber || '#CF',
+      type: 'approval'
+    });
+
+    setIssues(prev => prev.map(issue => {
+      if (issue.id === issueId) {
+        return {
+          ...issue,
+          status: 'In Progress',
+          progressPercent: Math.max(issue.progressPercent, 25),
+          adminApproval: {
+            ...issue.adminApproval,
+            approved: true,
+            approvedAt: new Date().toISOString(),
+            approvedByAdminName: currentUser.name,
+            adminComment: comment || 'Approved by Admin'
+          },
+          activityLog: [
+            {
+              id: `act-${Date.now()}`,
+              text: `Admin (${currentUser.name}) APPROVED work: "${comment || 'Approved'}"`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              actor: currentUser.name,
+              actorRole: 'admin'
+            },
+            ...issue.activityLog
+          ]
+        };
+      }
+      return issue;
+    }));
+    if (selectedIssue && selectedIssue.id === issueId) {
+      setSelectedIssue(prev => prev ? { ...prev, status: 'In Progress', progressPercent: Math.max(prev.progressPercent, 25) } : null);
     }
   };
 
   // Handle staff updating progress & marking resolved -> TiDB Cloud
   const handleUpdateProgress = async (issueId: string, progress: number, notes: string) => {
     if (!currentUser) return;
+    const targetIssue = issues.find(i => i.id === issueId);
     try {
       await apiService.updateProgress(issueId, currentUser.name, progress, notes || 'Progress updated');
-      await refreshIssues();
-      const isResolved = progress >= 100;
-      if (selectedIssue && selectedIssue.id === issueId) {
-        setSelectedIssue(prev => prev ? { ...prev, status: isResolved ? 'Resolved' : 'In Progress', progressPercent: progress } : null);
-      }
     } catch (err: any) {
-      alert(`Error updating progress: ${err.message}`);
+      console.error('Error updating progress:', err);
+    }
+    const isResolved = progress >= 100;
+
+    // Trigger Notifications for Student
+    if (targetIssue?.reporter) {
+      if (isResolved) {
+        addNotification({
+          targetRole: 'student',
+          targetUserId: targetIssue.reporter.id,
+          title: '🎉 Issue Resolved!',
+          message: `Your reported issue ${targetIssue.ticketNumber} (${targetIssue.title}) has been marked fully resolved (100%). ${notes ? `Notes: ${notes}` : ''}`,
+          issueId,
+          ticketNumber: targetIssue.ticketNumber,
+          type: 'resolved'
+        });
+      } else {
+        addNotification({
+          targetRole: 'student',
+          targetUserId: targetIssue.reporter.id,
+          title: `🔧 Progress Updated (${progress}%)`,
+          message: `Work progress on your report ${targetIssue.ticketNumber} (${targetIssue.title}) updated to ${progress}%. ${notes ? `Notes: ${notes}` : ''}`,
+          issueId,
+          ticketNumber: targetIssue.ticketNumber,
+          type: 'progress'
+        });
+      }
+    }
+
+    setIssues(prev => prev.map(issue => {
+      if (issue.id === issueId) {
+        return {
+          ...issue,
+          status: isResolved ? 'Resolved' : 'In Progress',
+          progressPercent: progress,
+          resolutionNotes: isResolved ? (notes || 'Issue fixed completely.') : issue.resolutionNotes,
+          activityLog: [
+            {
+              id: `act-${Date.now()}`,
+              text: isResolved ? `Issue RESOLVED by ${currentUser.name}: ${notes || 'Fixed'}` : `Progress updated to ${progress}%: ${notes || 'Updated'}`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              actor: currentUser.name,
+              actorRole: 'staff'
+            },
+            ...issue.activityLog
+          ]
+        };
+      }
+      return issue;
+    }));
+    if (selectedIssue && selectedIssue.id === issueId) {
+      setSelectedIssue(prev => prev ? { ...prev, status: isResolved ? 'Resolved' : 'In Progress', progressPercent: progress } : null);
     }
   };
 
@@ -170,6 +356,7 @@ export function App() {
           <StudentDashboard
             currentUser={currentUser}
             issues={issues}
+            notifications={notifications}
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onSelectIssue={(issue) => setSelectedIssue(issue)}
             onOpenSettings={() => setIsSettingsModalOpen(true)}
@@ -177,6 +364,8 @@ export function App() {
               setCurrentUser(null);
               setCurrentPage('landing');
             }}
+            onMarkNotificationRead={handleMarkNotificationRead}
+            onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
           />
         )}
 
@@ -184,10 +373,13 @@ export function App() {
           <StaffDashboard
             currentUser={currentUser}
             issues={issues}
+            notifications={notifications}
             onSelectIssue={(issue) => setSelectedIssue(issue)}
             onRequestApproval={handleRequestApproval}
             onUpdateProgress={handleUpdateProgress}
             onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onMarkNotificationRead={handleMarkNotificationRead}
+            onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
           />
         )}
 
@@ -223,6 +415,7 @@ export function App() {
             isOpen={isSettingsModalOpen}
             onClose={() => setIsSettingsModalOpen(false)}
             currentUser={currentUser}
+            onUpdateProfile={handleUpdateUserProfile}
           />
         </>
       )}

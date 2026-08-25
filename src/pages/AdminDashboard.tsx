@@ -21,6 +21,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'all-issues' | 'approval-requests' | 'tidb-config'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority' | 'progress'>('newest');
 
   // TiDB Cloud config state
   const [tidbHost, setTidbHost] = useState('gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
@@ -45,11 +49,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const pendingApprovalIssues = issues.filter(i => i.status === 'Pending Approval');
 
-  const filteredIssues = issues.filter(i =>
-    i.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.location.block.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredIssues = issues
+    .filter(i => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesQuery = !q ||
+        i.title.toLowerCase().includes(q) ||
+        i.ticketNumber.toLowerCase().includes(q) ||
+        i.location.block.toLowerCase().includes(q) ||
+        i.category.toLowerCase().includes(q) ||
+        (i.reporter?.name && i.reporter.name.toLowerCase().includes(q));
+
+      const matchesCat = categoryFilter === 'all' || i.category === categoryFilter;
+      const matchesPrio = priorityFilter === 'all' || i.priority === priorityFilter;
+      const matchesStat = statusFilter === 'all' || i.status === statusFilter;
+
+      return matchesQuery && matchesCat && matchesPrio && matchesStat;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sortBy === 'priority') {
+        const pMap: Record<string, number> = { Urgent: 4, High: 3, Medium: 2, Low: 1 };
+        return (pMap[b.priority] || 0) - (pMap[a.priority] || 0);
+      }
+      if (sortBy === 'progress') return b.progressPercent - a.progressPercent;
+      return 0;
+    });
 
   const handleTestTiDBConnection = () => {
     setTidbStatus('Testing connection to TiDB Cloud cluster...');
@@ -272,18 +297,101 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Requirement 6.1: All Issues Table */}
       {activeTab === 'all-issues' && (
         <div className="card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Master Issues Inventory (6.1)</h3>
-            <div style={{ position: 'relative', width: '300px' }}>
-              <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Filter issues..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '38px', fontSize: '0.82rem' }}
-              />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>Master Issues Inventory</h3>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Showing {filteredIssues.length} of {issues.length} campus issues</span>
+              </div>
+            </div>
+
+            {/* Filter & Sort Control Toolbar */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '10px',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#f8fafc',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0'
+            }}>
+              {/* Left Controls: Search + Category + Status + Priority */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', flex: 1 }}>
+                {/* Search Bar */}
+                <div style={{ position: 'relative', width: '220px' }}>
+                  <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Search title, ticket #, block..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ paddingLeft: '36px', fontSize: '0.82rem', height: '36px' }}
+                  />
+                </div>
+
+                {/* Category Filter */}
+                <select
+                  className="form-select"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', minWidth: '150px' }}
+                >
+                  <option value="all">All Categories</option>
+                  <option value="IT & AV Equipment">IT & AV Equipment</option>
+                  <option value="Plumbing & Water">Plumbing & Water</option>
+                  <option value="Electrical & Lighting">Electrical & Lighting</option>
+                  <option value="HVAC & Cooling">HVAC & Cooling</option>
+                  <option value="Furniture & Carpentry">Furniture & Carpentry</option>
+                  <option value="Campus Infrastructure">Campus Infrastructure</option>
+                </select>
+
+                {/* Status Filter */}
+                <select
+                  className="form-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '140px' }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Pending Approval">Awaiting Approval</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+
+                {/* Priority Filter */}
+                <select
+                  className="form-select"
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '130px' }}
+                >
+                  <option value="all">All Priorities</option>
+                  <option value="Urgent">Urgent</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              {/* Right Controls: Sort By */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap' }}>Sort By:</span>
+                <select
+                  className="form-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '150px', fontWeight: 700, color: '#0066ff' }}
+                >
+                  <option value="newest">🕒 Newest First</option>
+                  <option value="oldest">⏳ Oldest First</option>
+                  <option value="priority">⚡ Priority (High → Low)</option>
+                  <option value="progress">📊 Progress %</option>
+                </select>
+              </div>
             </div>
           </div>
 
