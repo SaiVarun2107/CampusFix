@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Shield, BarChart3, Search, Database
+  Shield, BarChart3, Database
 } from 'lucide-react';
 import type { Issue, CategoryStat, User } from '../types';
 import { calculateCategoryStats } from '../services/storageService';
@@ -20,7 +20,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenSettings
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'all-issues' | 'approval-requests' | 'tidb-config'>('overview');
-  const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -51,19 +50,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const filteredIssues = issues
     .filter(i => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchesQuery = !q ||
-        i.title.toLowerCase().includes(q) ||
-        i.ticketNumber.toLowerCase().includes(q) ||
-        i.location.block.toLowerCase().includes(q) ||
-        i.category.toLowerCase().includes(q) ||
-        (i.reporter?.name && i.reporter.name.toLowerCase().includes(q));
-
       const matchesCat = categoryFilter === 'all' || i.category === categoryFilter;
       const matchesPrio = priorityFilter === 'all' || i.priority === priorityFilter;
       const matchesStat = statusFilter === 'all' || i.status === statusFilter;
 
-      return matchesQuery && matchesCat && matchesPrio && matchesStat;
+      return matchesCat && matchesPrio && matchesStat;
     })
     .sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -84,49 +75,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div style={{ padding: '32px 24px', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Admin Header Banner */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '28px'
-      }}>
-        <div>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 12px',
-            borderRadius: '20px',
-            backgroundColor: '#f3e8ff',
-            color: '#7e22ce',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            marginBottom: '6px'
-          }}>
-            <Shield size={14} /> Executive Admin Command Center
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden', padding: '24px 32px', maxWidth: '1280px', margin: '0 auto' }}>
+      {/* Fixed Top Section (Header + Tabs + Stats) */}
+      <div style={{ flexShrink: 0 }}>
+        {/* Admin Header Banner */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '20px'
+        }}>
+          <div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              backgroundColor: '#f3e8ff',
+              color: '#7e22ce',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              marginBottom: '4px'
+            }}>
+              <Shield size={14} /> Executive Admin Command Center
+            </div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>
+              Campus Infrastructure Oversight
+            </h1>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
+              Authorize staff work requests, review category analytics, and manage database integrations.
+            </p>
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a' }}>
-            Campus Infrastructure Oversight
-          </h1>
-          <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '2px' }}>
-            Authorize staff work requests, review category analytics, and manage database integrations.
-          </p>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={onOpenSettings}
+              className="btn btn-secondary"
+              style={{ padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600 }}
+            >
+              Settings & Details
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={onOpenSettings}
-            className="btn btn-secondary"
-            style={{ padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600 }}
-          >
-            Settings & Details
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
           <button
             onClick={() => setActiveTab('overview')}
             className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
@@ -176,224 +169,214 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
 
-      {/* Overview Stat Counters for Requirement 6 */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
-        gap: '16px',
-        marginBottom: '32px'
-      }}>
-        <div className="card" style={{ padding: '20px' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>TOTAL ISSUES</span>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{stats.total}</div>
-        </div>
+        {/* Overview Stat Counters */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          gap: '12px',
+          marginBottom: '20px'
+        }}>
+          <div className="card" style={{ padding: '16px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>TOTAL ISSUES</span>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{stats.total}</div>
+          </div>
 
-        <div className="card" style={{ padding: '20px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c' }}>⌛ PENDING REPORTED</span>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#c2410c', marginTop: '4px' }}>{stats.pending}</div>
-        </div>
+          <div className="card" style={{ padding: '16px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c' }}>⌛ PENDING REPORTED</span>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#c2410c', marginTop: '2px' }}>{stats.pending}</div>
+          </div>
 
-        <div className="card" style={{ padding: '20px', backgroundColor: '#faf5ff', borderColor: '#e9d5ff' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#7e22ce' }}>🛡️ AWAITING APPROVAL</span>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#7e22ce', marginTop: '4px' }}>{stats.pendingApproval}</div>
-        </div>
+          <div className="card" style={{ padding: '16px', backgroundColor: '#faf5ff', borderColor: '#e9d5ff' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#7e22ce' }}>🛡️ AWAITING APPROVAL</span>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7e22ce', marginTop: '2px' }}>{stats.pendingApproval}</div>
+          </div>
 
-        <div className="card" style={{ padding: '20px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8' }}>🔧 IN PROGRESS</span>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#1d4ed8', marginTop: '4px' }}>{stats.inProgress}</div>
-        </div>
+          <div className="card" style={{ padding: '16px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8' }}>🔧 IN PROGRESS</span>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1d4ed8', marginTop: '2px' }}>{stats.inProgress}</div>
+          </div>
 
-        <div className="card" style={{ padding: '20px', backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>✓ RESOLVED</span>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#15803d', marginTop: '4px' }}>{stats.resolved}</div>
+          <div className="card" style={{ padding: '16px', backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>✓ RESOLVED</span>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#15803d', marginTop: '2px' }}>{stats.resolved}</div>
+          </div>
         </div>
       </div>
 
-      {/* Main Tab Views */}
-      {activeTab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
-          {/* Requirement 6 Category Graph visualization */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                📊 Category Complaint Distribution
-              </h3>
-              <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                Identifies highest priority infrastructure problem areas across campus.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {sortedCategories.map((cat, idx) => {
-                const percentage = Math.round((cat.count / maxCount) * 100);
-                return (
-                  <div key={idx}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                      <span style={{ color: '#0f172a' }}>{cat.category}</span>
-                      <span style={{ color: '#0066ff' }}>{cat.count} Issues ({cat.resolvedCount} Resolved)</span>
-                    </div>
-                    <div style={{ height: '12px', backgroundColor: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
-                      <div style={{
-                        width: `${percentage}%`,
-                        height: '100%',
-                        backgroundColor: cat.color,
-                        borderRadius: '6px',
-                        transition: 'width 0.6s ease'
-                      }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Quick Permission Approvals List */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                🛡️ Pending Work Authorization Requests (6.2 & 6.3)
-              </h3>
-              <span className="badge badge-approval">{pendingApprovalIssues.length} Pending</span>
-            </div>
-
-            {pendingApprovalIssues.length === 0 ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem' }}>
-                No pending work approval requests. All staff authorizations are up to date!
+      {/* Scrollable Container ONLY for Main Tab Content */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: '4px' }}>
+        {/* Main Tab Views */}
+        {activeTab === 'overview' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+            {/* Requirement 6 Category Graph visualization */}
+            <div className="card" style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                  📊 Category Complaint Distribution
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                  Identifies highest priority infrastructure problem areas across campus.
+                </p>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {pendingApprovalIssues.map((issue) => (
-                  <div key={issue.id} style={{
-                    padding: '14px',
-                    borderRadius: '12px',
-                    backgroundColor: '#faf5ff',
-                    border: '1px solid #e9d5ff',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7e22ce' }}>{issue.ticketNumber}</span>
-                        <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>{issue.title}</h4>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>📍 {issue.location.block}, {issue.location.room}</span>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {sortedCategories.map((cat, idx) => {
+                  const percentage = Math.round((cat.count / maxCount) * 100);
+                  return (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                        <span style={{ color: '#0f172a' }}>{cat.category}</span>
+                        <span style={{ color: '#0066ff' }}>{cat.count} Issues ({cat.resolvedCount} Resolved)</span>
                       </div>
-                      <button
-                        onClick={() => onApproveWork(issue.id, 'Approved by Admin')}
-                        className="btn btn-success"
-                        style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700 }}
-                      >
-                        ✓ Grant Approval
-                      </button>
+                      <div style={{ height: '12px', backgroundColor: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          backgroundColor: cat.color,
+                          borderRadius: '6px',
+                          transition: 'width 0.6s ease'
+                        }} />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Requirement 6.1: All Issues Table */}
-      {activeTab === 'all-issues' && (
-        <div className="card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>Master Issues Inventory</h3>
-                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Showing {filteredIssues.length} of {issues.length} campus issues</span>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Filter & Sort Control Toolbar */}
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '10px',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: '#f8fafc',
-              padding: '12px 16px',
-              borderRadius: '12px',
-              border: '1px solid #e2e8f0'
-            }}>
-              {/* Left Controls: Search + Category + Status + Priority */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', flex: 1 }}>
-                {/* Search Bar */}
-                <div style={{ position: 'relative', width: '220px' }}>
-                  <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Search title, ticket #, block..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ paddingLeft: '36px', fontSize: '0.82rem', height: '36px' }}
-                  />
+            {/* Quick Permission Approvals List */}
+            <div className="card" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                  🛡️ Pending Work Authorization Requests (6.2 & 6.3)
+                </h3>
+                <span className="badge badge-approval">{pendingApprovalIssues.length} Pending</span>
+              </div>
+
+              {pendingApprovalIssues.length === 0 ? (
+                <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem' }}>
+                  No pending work approval requests. All staff authorizations are up to date!
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {pendingApprovalIssues.map((issue) => (
+                    <div key={issue.id} style={{
+                      padding: '14px',
+                      borderRadius: '12px',
+                      backgroundColor: '#faf5ff',
+                      border: '1px solid #e9d5ff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7e22ce' }}>{issue.ticketNumber}</span>
+                          <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>{issue.title}</h4>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>📍 {issue.location.block}, {issue.location.room}</span>
+                        </div>
+                        <button
+                          onClick={() => onApproveWork(issue.id, 'Approved by Admin')}
+                          className="btn btn-success"
+                          style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700 }}
+                        >
+                          ✓ Grant Approval
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Master Issues Inventory Tab */}
+        {activeTab === 'all-issues' && (
+          <div className="card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>Master Issues Inventory</h3>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Showing {filteredIssues.length} of {issues.length} campus issues</span>
+                </div>
+              </div>
+
+              {/* Minimal Filter & Sort Control Toolbar - NO Search */}
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: '#f8fafc',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0'
+              }}>
+                {/* Left Controls: Category + Status + Priority */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                  {/* Category Filter */}
+                  <select
+                    className="form-select"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', minWidth: '140px', borderRadius: '6px' }}
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="IT & AV Equipment">IT & AV Equipment</option>
+                    <option value="Plumbing & Water">Plumbing & Water</option>
+                    <option value="Electrical & Lighting">Electrical & Lighting</option>
+                    <option value="HVAC & Cooling">HVAC & Cooling</option>
+                    <option value="Furniture & Carpentry">Furniture & Carpentry</option>
+                    <option value="Campus Infrastructure">Campus Infrastructure</option>
+                  </select>
+
+                  {/* Status Filter */}
+                  <select
+                    className="form-select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', width: '130px', borderRadius: '6px' }}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Pending Approval">Awaiting Approval</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                  </select>
+
+                  {/* Priority Filter */}
+                  <select
+                    className="form-select"
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', width: '120px', borderRadius: '6px' }}
+                  >
+                    <option value="all">All Priorities</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
                 </div>
 
-                {/* Category Filter */}
-                <select
-                  className="form-select"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', minWidth: '150px' }}
-                >
-                  <option value="all">All Categories</option>
-                  <option value="IT & AV Equipment">IT & AV Equipment</option>
-                  <option value="Plumbing & Water">Plumbing & Water</option>
-                  <option value="Electrical & Lighting">Electrical & Lighting</option>
-                  <option value="HVAC & Cooling">HVAC & Cooling</option>
-                  <option value="Furniture & Carpentry">Furniture & Carpentry</option>
-                  <option value="Campus Infrastructure">Campus Infrastructure</option>
-                </select>
-
-                {/* Status Filter */}
-                <select
-                  className="form-select"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '140px' }}
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Pending Approval">Awaiting Approval</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Resolved">Resolved</option>
-                </select>
-
-                {/* Priority Filter */}
-                <select
-                  className="form-select"
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '130px' }}
-                >
-                  <option value="all">All Priorities</option>
-                  <option value="Urgent">Urgent</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
-
-              {/* Right Controls: Sort By */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap' }}>Sort By:</span>
-                <select
-                  className="form-select"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '150px', fontWeight: 700, color: '#0066ff' }}
-                >
-                  <option value="newest">🕒 Newest First</option>
-                  <option value="oldest">⏳ Oldest First</option>
-                  <option value="priority">⚡ Priority (High → Low)</option>
-                  <option value="progress">📊 Progress %</option>
-                </select>
+                {/* Right Controls: Sort By */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap' }}>Sort By:</span>
+                  <select
+                    className="form-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', width: '140px', fontWeight: 700, color: '#0066ff', borderRadius: '6px' }}
+                  >
+                    <option value="newest">🕒 Newest First</option>
+                    <option value="oldest">⏳ Oldest First</option>
+                    <option value="priority">⚡ Priority (High → Low)</option>
+                    <option value="progress">📊 Progress %</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
@@ -593,6 +576,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, AlertCircle, LogOut, Settings,
-  Plus, Search, Bell, CheckCircle2, Wrench, Eye, User as UserIcon
+  Plus, Bell, CheckCircle2, Wrench, Eye, User as UserIcon
 } from 'lucide-react';
 import type { Issue, User, NotificationItem, UserRole } from '../types';
 
@@ -29,7 +29,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onMarkAllNotificationsRead
 }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'my-issues' | 'solved-issues'>('dashboard');
-  const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -50,18 +49,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const filteredIssues = targetList
     .filter(i => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchesQuery = !q ||
-        i.title.toLowerCase().includes(q) ||
-        i.ticketNumber.toLowerCase().includes(q) ||
-        i.location.block.toLowerCase().includes(q) ||
-        (i.location.room && i.location.room.toLowerCase().includes(q));
-
       const matchesCat = categoryFilter === 'all' || i.category === categoryFilter;
       const matchesPrio = priorityFilter === 'all' || i.priority === priorityFilter;
       const matchesStat = statusFilter === 'all' || i.status === statusFilter;
 
-      return matchesQuery && matchesCat && matchesPrio && matchesStat;
+      return matchesCat && matchesPrio && matchesStat;
     })
     .sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -82,10 +74,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 64px)', backgroundColor: '#f8fafc' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
       {/* Sidebar */}
       <aside style={{
         width: '240px',
+        height: '100%',
+        overflowY: 'auto',
         backgroundColor: '#111827',
         color: '#9ca3af',
         display: 'flex',
@@ -243,32 +237,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
-        {/* Search Header */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: '24px 32px' }}>
+        {/* Top Header - No Search bar */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '28px'
+          justifyContent: 'flex-end',
+          marginBottom: '20px',
+          flexShrink: 0
         }}>
-          {/* Search bar */}
-          <div style={{ position: 'relative', width: '380px' }}>
-            <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '11px' }} />
-            <input
-              type="text"
-              placeholder="Search issues, locations..."
-              className="form-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                paddingLeft: '42px',
-                borderRadius: '999px',
-                backgroundColor: '#ffffff',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-
           {/* User profile & Notifications */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative' }}>
             {/* Interactive Bell Icon button */}
@@ -443,66 +420,71 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         </div>
 
-        {/* Welcome Greeting */}
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            Good morning, {currentUser.name.split(' ')[0]} 👋
-          </h1>
-          <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '2px' }}>
-            Here's the status of your reported campus infrastructure issues.
-          </p>
+        {/* Fixed Header Section (Greeting + Stats) */}
+        <div style={{ flexShrink: 0 }}>
+          {/* Welcome Greeting */}
+          <div style={{ marginBottom: '20px' }}>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Good morning, {currentUser.name.split(' ')[0]} 👋
+            </h1>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
+              Here's the status of your reported campus infrastructure issues.
+            </p>
+          </div>
+
+          {/* 4 Counter Cards */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '14px',
+            marginBottom: '20px'
+          }}>
+            {/* Card 1: TOTAL ISSUES */}
+            <div className="card" style={{ padding: '16px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.05em' }}>
+                MY REPORTED ISSUES
+              </div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                {stats.total}
+              </div>
+            </div>
+
+            {/* Card 2: PENDING */}
+            <div className="card" style={{ padding: '16px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                ⏳ PENDING
+              </div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#c2410c', marginTop: '2px' }}>
+                {stats.pending}
+              </div>
+            </div>
+
+            {/* Card 3: IN PROGRESS */}
+            <div className="card" style={{ padding: '16px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                🔧 IN PROGRESS
+              </div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#1d4ed8', marginTop: '2px' }}>
+                {stats.inProgress}
+              </div>
+            </div>
+
+            {/* Card 4: RESOLVED */}
+            <div className="card" style={{ padding: '16px', backgroundColor: '#ffffff' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                ✓ RESOLVED
+              </div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                {stats.resolved}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 4 Counter Cards */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
-          marginBottom: '32px'
-        }}>
-          {/* Card 1: TOTAL ISSUES */}
-          <div className="card" style={{ padding: '20px' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.05em' }}>
-              MY REPORTED ISSUES
-            </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
-              {stats.total}
-            </div>
-          </div>
-
-          {/* Card 2: PENDING */}
-          <div className="card" style={{ padding: '20px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              ⏳ PENDING
-            </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#c2410c', marginTop: '4px' }}>
-              {stats.pending}
-            </div>
-          </div>
-
-          {/* Card 3: IN PROGRESS */}
-          <div className="card" style={{ padding: '20px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🔧 IN PROGRESS
-            </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1d4ed8', marginTop: '4px' }}>
-              {stats.inProgress}
-            </div>
-          </div>
-
-          {/* Card 4: RESOLVED */}
-          <div className="card" style={{ padding: '20px', backgroundColor: '#ffffff' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              ✓ RESOLVED
-            </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
-              {stats.resolved}
-            </div>
-          </div>
-        </div>
-
-        {/* Dashboard Grid: Recent Issues (Left) + Updates Feed (Right) */}
-        {activeTab === 'dashboard' && (
+        {/* Scrollable Issues List Section */}
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: '4px' }}>
+          {/* Dashboard Grid: Recent Issues (Left) + Updates Feed (Right) */}
+          {activeTab === 'dashboard' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px' }}>
             {/* Left: Recent Issues Feed */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -619,35 +601,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '12px',
+              gap: '10px',
               alignItems: 'center',
               justifyContent: 'space-between',
               backgroundColor: '#ffffff',
-              padding: '14px 18px',
-              borderRadius: '16px',
+              padding: '8px 14px',
+              borderRadius: '10px',
               border: '1px solid #e2e8f0'
             }}>
-              {/* Left Group: Search + Category + Priority + Status Filter */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', flex: 1 }}>
-                {/* Search */}
-                <div style={{ position: 'relative', minWidth: '220px', flex: 1 }}>
-                  <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Search title, ticket #, room..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ paddingLeft: '36px', fontSize: '0.82rem', height: '36px' }}
-                  />
-                </div>
-
+              {/* Left Group: Category + Priority + Status Filter */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                 {/* Category Dropdown */}
                 <select
                   className="form-select"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', minWidth: '160px' }}
+                  style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', minWidth: '140px', borderRadius: '6px' }}
                 >
                   <option value="all">All Categories</option>
                   <option value="IT & AV Equipment">IT & AV Equipment</option>
@@ -663,7 +632,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   className="form-select"
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '130px' }}
+                  style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', width: '120px', borderRadius: '6px' }}
                 >
                   <option value="all">All Priorities</option>
                   <option value="Urgent">Urgent</option>
@@ -678,7 +647,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     className="form-select"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '140px' }}
+                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', width: '130px', borderRadius: '6px' }}
                   >
                     <option value="all">All Statuses</option>
                     <option value="Pending">Pending</option>
@@ -689,13 +658,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </div>
 
               {/* Right Group: Sort By Dropdown */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap' }}>Sort By:</span>
                 <select
                   className="form-select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  style={{ height: '36px', fontSize: '0.82rem', padding: '0 10px', width: '150px', fontWeight: 700, color: '#0066ff' }}
+                  style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', width: '140px', fontWeight: 700, color: '#0066ff', borderRadius: '6px' }}
                 >
                   <option value="newest">🕒 Newest First</option>
                   <option value="oldest">⏳ Oldest First</option>
@@ -773,6 +742,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   );
