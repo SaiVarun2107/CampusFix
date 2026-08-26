@@ -26,18 +26,22 @@ export const Navbar: React.FC<NavbarProps> = ({
       zIndex: 100,
       boxShadow: 'var(--shadow-sm)'
     }}>
-      <div style={{
-        maxWidth: '1280px',
-        margin: '0 auto',
-        padding: '0 24px',
-        height: '64px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
+      <div 
+        className="navbar-container"
+        style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '0 24px',
+          height: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}
+      >
         {/* Brand Logo */}
         <div 
           onClick={() => onNavigate('landing')}
+          className="navbar-brand"
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
         >
           <div style={{
@@ -63,49 +67,52 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </div>
 
-        {/* Navigation Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-          <button 
-            onClick={() => onNavigate('landing')} 
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '0.9rem',
-              fontWeight: currentPage === 'landing' ? 700 : 500,
-              color: currentPage === 'landing' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              cursor: 'pointer'
-            }}
-          >
-            How it Works
-          </button>
-          
-          <button 
-            onClick={onOpenImpactModal} 
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              color: '#2563eb',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <BarChart3 size={16} />
-            Impact
-          </button>
-
-          {currentUser && (
+        {/* Navigation Links - Only show Impact & How it Works when NOT logged in */}
+        <nav className="navbar-nav" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          {!currentUser ? (
+            <>
+              <button 
+                onClick={() => onNavigate('landing')} 
+                className="navbar-nav-link-desktop"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: currentPage === 'landing' ? 700 : 500,
+                  color: currentPage === 'landing' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                How it Works
+              </button>
+              
+              <button 
+                onClick={onOpenImpactModal} 
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: '#2563eb',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <BarChart3 size={16} />
+                Impact
+              </button>
+            </>
+          ) : (
             <button 
               onClick={() => onNavigate(currentUser.role === 'student' ? 'student-dashboard' : currentUser.role === 'staff' ? 'staff-dashboard' : 'admin-dashboard')} 
               style={{
                 background: 'none',
                 border: 'none',
                 fontSize: '0.9rem',
-                fontWeight: currentPage.includes('dashboard') ? 700 : 500,
-                color: currentPage.includes('dashboard') ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                fontWeight: 700,
+                color: 'var(--color-primary)',
                 cursor: 'pointer'
               }}
             >
@@ -115,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Right Section: Log In & Sign Up / User Profile */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
@@ -139,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}>
                   <UserIcon size={14} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="navbar-user-text" style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-main)' }}>
                     {currentUser.name}
                   </span>
@@ -167,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button 
                 onClick={() => onNavigate('login')}
                 className="btn btn-secondary"

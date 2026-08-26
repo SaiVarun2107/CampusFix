@@ -378,6 +378,10 @@ export function App() {
             onRequestApproval={handleRequestApproval}
             onUpdateProgress={handleUpdateProgress}
             onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onLogout={() => {
+              setCurrentUser(null);
+              setCurrentPage('landing');
+            }}
             onMarkNotificationRead={handleMarkNotificationRead}
             onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
           />
@@ -390,6 +394,10 @@ export function App() {
             onSelectIssue={(issue) => setSelectedIssue(issue)}
             onApproveWork={handleApproveWork}
             onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onLogout={() => {
+              setCurrentUser(null);
+              setCurrentPage('landing');
+            }}
           />
         )}
       </div>

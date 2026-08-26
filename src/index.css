@@ -325,3 +325,220 @@ a {
   0% { transform: scale(0.8); opacity: 0.6; }
   100% { transform: scale(2.2); opacity: 0; }
 }
+
+@keyframes slideDrawerIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* ==========================================================================
+   Mobile Responsive Enhancements (Screen <= 768px)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Navbar Responsive */
+  .navbar-container {
+    padding: 0 12px !important;
+    height: 56px !important;
+  }
+  
+  .navbar-brand span {
+    font-size: 1.05rem !important;
+  }
+  
+  .navbar-nav {
+    gap: 8px !important;
+  }
+  
+  .navbar-nav-link-desktop {
+    display: none !important;
+  }
+  
+  .navbar-actions {
+    gap: 6px !important;
+  }
+  
+  .navbar-actions .btn {
+    padding: 6px 12px !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* Hide long user name text on mobile top header to prevent badge wrapping */
+  .navbar-user-text {
+    display: none !important;
+  }
+
+  /* Landing Page Hero Responsive */
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+    padding: 24px 16px 40px 16px !important;
+  }
+
+  .hero-title {
+    font-size: 2.1rem !important;
+    margin-bottom: 14px !important;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem !important;
+    margin-bottom: 20px !important;
+  }
+
+  .hero-buttons {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .hero-buttons .btn {
+    width: 100% !important;
+    padding: 12px 20px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .hero-image-col {
+    order: -1;
+  }
+
+  .hero-image-col img {
+    height: 220px !important;
+  }
+
+  .floating-ticket-overlay {
+    position: static !important;
+    margin-top: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .how-it-works-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  /* Student Dashboard Mobile Responsive Layout */
+  .student-layout {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: calc(100vh - 56px) !important;
+    overflow: auto !important;
+  }
+
+  /* Hide desktop sidebar on mobile */
+  .desktop-sidebar {
+    display: none !important;
+  }
+
+  .mobile-top-header {
+    display: flex !important;
+  }
+
+  .student-main-content {
+    padding: 14px 12px !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Compact Stat Counter Cards across all dashboards on mobile */
+  .student-stats-grid, .staff-stats-grid, .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .student-stats-grid .card, .staff-stats-grid .card, .admin-stats-grid .card {
+    padding: 10px 12px !important;
+  }
+
+  .student-stats-grid .card div:last-child,
+  .staff-stats-grid .card div:last-child,
+  .admin-stats-grid .card div:last-child {
+    font-size: 1.35rem !important;
+    margin-top: 2px !important;
+  }
+
+  .student-dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Staff Dashboard Mobile Responsive Layout */
+  .staff-layout {
+    padding: 14px 12px !important;
+    height: auto !important;
+    overflow: auto !important;
+  }
+
+  .staff-header-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .staff-filter-tabs {
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .staff-filter-dropdowns {
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .staff-issue-card {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+
+  /* Admin Dashboard Mobile Responsive Layout */
+  .admin-layout {
+    padding: 14px 12px !important;
+    height: auto !important;
+    overflow: auto !important;
+  }
+
+  .admin-header-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .admin-tabs-bar {
+    display: none !important;
+  }
+
+  .staff-filter-tabs {
+    display: none !important;
+  }
+
+  .admin-overview-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .admin-table-container {
+    overflow-x: auto !important;
+  }
+
+  /* Landing Footer Mobile Responsive */
+  .landing-footer {
+    flex-direction: column !important;
+    gap: 16px !important;
+    text-align: center !important;
+    padding: 24px 16px !important;
+  }
+
+  .landing-footer-links {
+    gap: 14px !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* Modal Responsive */
+  .modal-content {
+    max-width: 95vw !important;
+    border-radius: 16px !important;
+    padding: 0 !important;
+  }
+}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Shield, BarChart3, Database
+  Shield, BarChart3, Database, ChevronDown, ChevronUp, Menu, X, LogOut
 } from 'lucide-react';
 import type { Issue, CategoryStat, User } from '../types';
 import { calculateCategoryStats } from '../services/storageService';
@@ -11,19 +11,23 @@ interface AdminDashboardProps {
   onSelectIssue: (issue: Issue) => void;
   onApproveWork: (issueId: string, comment: string) => void;
   onOpenSettings: () => void;
+  onLogout?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   issues,
   onSelectIssue,
   onApproveWork,
-  onOpenSettings
+  onOpenSettings,
+  onLogout
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'all-issues' | 'approval-requests' | 'tidb-config'>('overview');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority' | 'progress'>('newest');
+  const [isCategoryExpanded, setIsCategoryExpanded] = useState(true);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // TiDB Cloud config state
   const [tidbHost, setTidbHost] = useState('gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
@@ -75,11 +79,244 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden', padding: '24px 32px', maxWidth: '1280px', margin: '0 auto' }}>
+    <div className="admin-layout" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden', padding: '24px 32px', maxWidth: '1280px', margin: '0 auto' }}>
+      {/* Mobile Top Header Bar with Hamburger Button */}
+      <div 
+        className="mobile-top-header"
+        style={{
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          backgroundColor: '#111827',
+          color: '#ffffff',
+          borderBottom: '1px solid #1f2937',
+          margin: '-24px -32px 16px -32px',
+          flexShrink: 0
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => setIsMobileDrawerOpen(true)}
+            style={{
+              background: '#1f2937',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px 10px',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Menu size={22} />
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Shield size={18} color="#a855f7" />
+            <span style={{ fontSize: '1rem', fontWeight: 800 }}>Admin Portal</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Slide-In Mobile Left Drawer for Admin Portal */}
+      {isMobileDrawerOpen && (
+        <div 
+          onClick={() => setIsMobileDrawerOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 200,
+            display: 'flex'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '285px',
+              height: '100%',
+              backgroundColor: '#111827',
+              color: '#9ca3af',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              padding: '24px 20px',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+              animation: 'slideDrawerIn 0.25s ease-out'
+            }}
+          >
+            <div>
+              {/* Drawer Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: '#7e22ce',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
+                      CampusFix
+                    </h3>
+                    <span style={{ fontSize: '0.68rem', color: '#6b7280' }}>Admin Oversight</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* Navigation Options inside Mobile Drawer */}
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', marginBottom: '10px' }}>
+                Admin Controls
+              </div>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <button
+                  onClick={() => { setActiveTab('overview'); setIsMobileDrawerOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: activeTab === 'overview' ? 700 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    backgroundColor: activeTab === 'overview' ? '#1f2937' : 'transparent',
+                    color: activeTab === 'overview' ? '#ffffff' : '#9ca3af',
+                    borderLeft: activeTab === 'overview' ? '3px solid #a855f7' : '3px solid transparent'
+                  }}
+                >
+                  <BarChart3 size={18} /> Overview & Analytics
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('all-issues'); setIsMobileDrawerOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: activeTab === 'all-issues' ? 700 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    backgroundColor: activeTab === 'all-issues' ? '#1f2937' : 'transparent',
+                    color: activeTab === 'all-issues' ? '#ffffff' : '#9ca3af',
+                    borderLeft: activeTab === 'all-issues' ? '3px solid #a855f7' : '3px solid transparent'
+                  }}
+                >
+                  📋 All Master Issues ({issues.length})
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('approval-requests'); setIsMobileDrawerOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: activeTab === 'approval-requests' ? 700 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    backgroundColor: activeTab === 'approval-requests' ? '#1f2937' : 'transparent',
+                    color: activeTab === 'approval-requests' ? '#ffffff' : '#9ca3af',
+                    borderLeft: activeTab === 'approval-requests' ? '3px solid #a855f7' : '3px solid transparent'
+                  }}
+                >
+                  🛡️ Pending Approvals ({pendingApprovalIssues.length})
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('tidb-config'); setIsMobileDrawerOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: activeTab === 'tidb-config' ? 700 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    backgroundColor: activeTab === 'tidb-config' ? '#1f2937' : 'transparent',
+                    color: activeTab === 'tidb-config' ? '#ffffff' : '#9ca3af',
+                    borderLeft: activeTab === 'tidb-config' ? '3px solid #a855f7' : '3px solid transparent'
+                  }}
+                >
+                  <Database size={18} /> TiDB Cloud Integration
+                </button>
+              </nav>
+            </div>
+
+            {/* Drawer Footer */}
+            <div style={{ borderTop: '1px solid #1f2937', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={() => { setIsMobileDrawerOpen(false); onOpenSettings(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#1f2937',
+                  color: '#ffffff',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Settings & Details
+              </button>
+
+              {onLogout && (
+                <button
+                  onClick={() => { setIsMobileDrawerOpen(false); onLogout(); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'none',
+                    color: '#ef4444',
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <LogOut size={16} /> Logout
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Fixed Top Section (Header + Tabs + Stats) */}
       <div style={{ flexShrink: 0 }}>
         {/* Admin Header Banner */}
-        <div style={{
+        <div className="admin-header-banner" style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -101,25 +338,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Shield size={14} /> Executive Admin Command Center
             </div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>
-              Campus Infrastructure Oversight
+              {activeTab === 'overview' ? 'Campus Infrastructure Oversight' :
+               activeTab === 'all-issues' ? 'Master Issues Inventory' :
+               activeTab === 'approval-requests' ? 'Pending Work Authorization Requests' : 'TiDB Cloud Database Sync'}
             </h1>
             <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
               Authorize staff work requests, review category analytics, and manage database integrations.
             </p>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={onOpenSettings}
-              className="btn btn-secondary"
-              style={{ padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600 }}
-            >
-              Settings & Details
-            </button>
-          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        <div className="admin-tabs-bar" style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
           <button
             onClick={() => setActiveTab('overview')}
             className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
@@ -169,121 +398,155 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
 
-        {/* Overview Stat Counters */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: '12px',
-          marginBottom: '20px'
-        }}>
-          <div className="card" style={{ padding: '16px' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>TOTAL ISSUES</span>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{stats.total}</div>
-          </div>
+        {/* Overview Stat Counters - Displayed ONLY on main Overview & Analytics tab */}
+        {activeTab === 'overview' && (
+          <div className="admin-stats-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: '12px',
+            marginBottom: '20px'
+          }}>
+            <div className="card" style={{ padding: '16px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>TOTAL ISSUES</span>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{stats.total}</div>
+            </div>
 
-          <div className="card" style={{ padding: '16px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c' }}>⌛ PENDING REPORTED</span>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#c2410c', marginTop: '2px' }}>{stats.pending}</div>
-          </div>
+            <div className="card" style={{ padding: '16px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c' }}>⌛ PENDING REPORTED</span>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#c2410c', marginTop: '2px' }}>{stats.pending}</div>
+            </div>
 
-          <div className="card" style={{ padding: '16px', backgroundColor: '#faf5ff', borderColor: '#e9d5ff' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#7e22ce' }}>🛡️ AWAITING APPROVAL</span>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7e22ce', marginTop: '2px' }}>{stats.pendingApproval}</div>
-          </div>
+            <div className="card" style={{ padding: '16px', backgroundColor: '#faf5ff', borderColor: '#e9d5ff' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#7e22ce' }}>🛡️ AWAITING APPROVAL</span>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7e22ce', marginTop: '2px' }}>{stats.pendingApproval}</div>
+            </div>
 
-          <div className="card" style={{ padding: '16px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8' }}>🔧 IN PROGRESS</span>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1d4ed8', marginTop: '2px' }}>{stats.inProgress}</div>
-          </div>
+            <div className="card" style={{ padding: '16px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8' }}>🔧 IN PROGRESS</span>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1d4ed8', marginTop: '2px' }}>{stats.inProgress}</div>
+            </div>
 
-          <div className="card" style={{ padding: '16px', backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>✓ RESOLVED</span>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#15803d', marginTop: '2px' }}>{stats.resolved}</div>
+            <div className="card" style={{ padding: '16px', backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>✓ RESOLVED</span>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#15803d', marginTop: '2px' }}>{stats.resolved}</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Scrollable Container ONLY for Main Tab Content */}
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: '4px' }}>
         {/* Main Tab Views */}
         {activeTab === 'overview' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
-            {/* Requirement 6 Category Graph visualization */}
-            <div className="card" style={{ padding: '24px' }}>
-              <div style={{ marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                  📊 Category Complaint Distribution
-                </h3>
-                <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                  Identifies highest priority infrastructure problem areas across campus.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {sortedCategories.map((cat, idx) => {
-                  const percentage = Math.round((cat.count / maxCount) * 100);
-                  return (
-                    <div key={idx}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                        <span style={{ color: '#0f172a' }}>{cat.category}</span>
-                        <span style={{ color: '#0066ff' }}>{cat.count} Issues ({cat.resolvedCount} Resolved)</span>
-                      </div>
-                      <div style={{ height: '12px', backgroundColor: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
-                        <div style={{
-                          width: `${percentage}%`,
-                          height: '100%',
-                          backgroundColor: cat.color,
-                          borderRadius: '6px',
-                          transition: 'width 0.6s ease'
-                        }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Quick Permission Approvals List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* 1st: Pending Work Authorization Requests (Top Priority) */}
             <div className="card" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                  🛡️ Pending Work Authorization Requests (6.2 & 6.3)
-                </h3>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                    🛡️ Pending Work Authorization Requests (6.2 & 6.3)
+                  </h3>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    Review maintenance staff authorization requests before work begins.
+                  </span>
+                </div>
                 <span className="badge badge-approval">{pendingApprovalIssues.length} Pending</span>
               </div>
 
               {pendingApprovalIssues.length === 0 ? (
-                <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem' }}>
-                  No pending work approval requests. All staff authorizations are up to date!
+                <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+                  ✓ No pending work approval requests. All staff authorizations are up to date!
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {pendingApprovalIssues.map((issue) => (
                     <div key={issue.id} style={{
-                      padding: '14px',
+                      padding: '14px 18px',
                       borderRadius: '12px',
                       backgroundColor: '#faf5ff',
                       border: '1px solid #e9d5ff',
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px'
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7e22ce' }}>{issue.ticketNumber}</span>
-                          <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>{issue.title}</h4>
-                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>📍 {issue.location.block}, {issue.location.room}</span>
-                        </div>
-                        <button
-                          onClick={() => onApproveWork(issue.id, 'Approved by Admin')}
-                          className="btn btn-success"
-                          style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700 }}
-                        >
-                          ✓ Grant Approval
-                        </button>
+                      <div>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7e22ce' }}>{issue.ticketNumber} • {issue.priority} Priority</span>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', margin: '2px 0' }}>{issue.title}</h4>
+                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>📍 {issue.location.block}, {issue.location.room} | Staff: <b>{issue.assignedStaff?.name || 'Maintenance Tech'}</b></span>
                       </div>
+                      <button
+                        onClick={() => onApproveWork(issue.id, 'Approved by Admin')}
+                        className="btn btn-success"
+                        style={{ padding: '8px 16px', fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                      >
+                        ✓ Grant Approval
+                      </button>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* 2nd: Category Complaint Distribution (Collapsible Accordion Card) */}
+            <div className="card" style={{ padding: '24px' }}>
+              <div 
+                onClick={() => setIsCategoryExpanded(prev => !prev)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📊 Category Complaint Distribution
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
+                    Identifies highest priority infrastructure problem areas across campus.
+                  </p>
+                </div>
+                <button
+                  style={{
+                    background: '#f1f5f9',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#64748b'
+                  }}
+                >
+                  {isCategoryExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+              </div>
+
+              {isCategoryExpanded && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                  {sortedCategories.map((cat, idx) => {
+                    const percentage = Math.round((cat.count / maxCount) * 100);
+                    return (
+                      <div key={idx}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                          <span style={{ color: '#0f172a' }}>{cat.category}</span>
+                          <span style={{ color: '#0066ff' }}>{cat.count} Issues ({cat.resolvedCount} Resolved)</span>
+                        </div>
+                        <div style={{ height: '10px', backgroundColor: '#f1f5f9', borderRadius: '5px', overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${percentage}%`,
+                            height: '100%',
+                            backgroundColor: cat.color,
+                            borderRadius: '5px',
+                            transition: 'width 0.6s ease'
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -378,60 +641,62 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
-                <th style={{ padding: '12px' }}>Ticket</th>
-                <th style={{ padding: '12px' }}>Title & Category</th>
-                <th style={{ padding: '12px' }}>Location</th>
-                <th style={{ padding: '12px' }}>Priority</th>
-                <th style={{ padding: '12px' }}>Status</th>
-                <th style={{ padding: '12px' }}>Work Permission</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredIssues.map((issue) => (
-                <tr key={issue.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '12px', fontWeight: 700, fontFamily: 'monospace' }}>{issue.ticketNumber}</td>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{issue.title}</div>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{issue.category}</span>
-                  </td>
-                  <td style={{ padding: '12px', color: '#475569' }}>{issue.location.block}, {issue.location.room}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span className={`priority-pill priority-${issue.priority.toLowerCase()}`}>{issue.priority}</span>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    {issue.status === 'In Progress' && <span className="badge badge-in-progress">In Progress</span>}
-                    {issue.status === 'Pending' && <span className="badge badge-pending">Pending</span>}
-                    {issue.status === 'Pending Approval' && <span className="badge badge-approval">Awaiting Approval</span>}
-                    {issue.status === 'Resolved' && <span className="badge badge-resolved">Resolved</span>}
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    {issue.adminApproval.approved ? (
-                      <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.78rem' }}>✓ Authorized</span>
-                    ) : issue.status === 'Pending Approval' ? (
-                      <span style={{ color: '#7e22ce', fontWeight: 700, fontSize: '0.78rem' }}>🛡️ Permission Requested</span>
-                    ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>Not Requested</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '12px', textAlign: 'right' }}>
-                    <button
-                      onClick={() => onSelectIssue(issue)}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.75rem' }}
-                    >
-                      Inspect
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            <div className="admin-table-container">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: '600px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
+                    <th style={{ padding: '12px' }}>Ticket</th>
+                    <th style={{ padding: '12px' }}>Title & Category</th>
+                    <th style={{ padding: '12px' }}>Location</th>
+                    <th style={{ padding: '12px' }}>Priority</th>
+                    <th style={{ padding: '12px' }}>Status</th>
+                    <th style={{ padding: '12px' }}>Work Permission</th>
+                    <th style={{ padding: '12px', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredIssues.map((issue) => (
+                    <tr key={issue.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px', fontWeight: 700, fontFamily: 'monospace' }}>{issue.ticketNumber}</td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{issue.title}</div>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{issue.category}</span>
+                      </td>
+                      <td style={{ padding: '12px', color: '#475569' }}>{issue.location.block}, {issue.location.room}</td>
+                      <td style={{ padding: '12px' }}>
+                        <span className={`priority-pill priority-${issue.priority.toLowerCase()}`}>{issue.priority}</span>
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        {issue.status === 'In Progress' && <span className="badge badge-in-progress">In Progress</span>}
+                        {issue.status === 'Pending' && <span className="badge badge-pending">Pending</span>}
+                        {issue.status === 'Pending Approval' && <span className="badge badge-approval">Awaiting Approval</span>}
+                        {issue.status === 'Resolved' && <span className="badge badge-resolved">Resolved</span>}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        {issue.adminApproval.approved ? (
+                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.78rem' }}>✓ Authorized</span>
+                        ) : issue.status === 'Pending Approval' ? (
+                          <span style={{ color: '#7e22ce', fontWeight: 700, fontSize: '0.78rem' }}>🛡️ Permission Requested</span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>Not Requested</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                        <button
+                          onClick={() => onSelectIssue(issue)}
+                          className="btn btn-secondary"
+                          style={{ padding: '6px 12px', fontSize: '0.75rem' }}
+                        >
+                          Inspect
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       {/* Requirement 6.2 & 6.3: Approval Requests Dedicated Tab */}
       {activeTab === 'approval-requests' && (

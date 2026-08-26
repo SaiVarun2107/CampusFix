@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, AlertCircle, LogOut, Settings,
-  Plus, Bell, CheckCircle2, Wrench, Eye, User as UserIcon
+  Plus, Bell, CheckCircle2, Wrench, Eye, User as UserIcon, Menu, X
 } from 'lucide-react';
 import type { Issue, User, NotificationItem, UserRole } from '../types';
 
@@ -34,6 +34,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority' | 'progress'>('newest');
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Filter issues belonging to the current student by ID, Email, or Name match
   const studentIssues = issues.filter(
@@ -74,9 +75,236 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
-      {/* Sidebar */}
-      <aside style={{
+    <div className="student-layout" style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+      {/* Mobile Top Header Bar with Hamburger Button */}
+      <div 
+        className="mobile-top-header"
+        style={{
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          backgroundColor: '#111827',
+          color: '#ffffff',
+          borderBottom: '1px solid #1f2937',
+          flexShrink: 0
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => setIsMobileDrawerOpen(true)}
+            style={{
+              background: '#1f2937',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px 10px',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Menu size={22} />
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Wrench size={18} color="#0066ff" />
+            <span style={{ fontSize: '1rem', fontWeight: 800 }}>CampusFix</span>
+          </div>
+        </div>
+
+        <button
+          onClick={onOpenReportModal}
+          className="btn btn-primary"
+          style={{ padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700 }}
+        >
+          <Plus size={14} /> Report
+        </button>
+      </div>
+
+      {/* Slide-In Mobile Drawer from Left */}
+      {isMobileDrawerOpen && (
+        <div 
+          onClick={() => setIsMobileDrawerOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 200,
+            display: 'flex'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '280px',
+              height: '100%',
+              backgroundColor: '#111827',
+              color: '#9ca3af',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              padding: '24px 20px',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+              animation: 'slideDrawerIn 0.25s ease-out'
+            }}
+          >
+            <div>
+              {/* Drawer Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: '#0066ff',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Wrench size={18} />
+                  </div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff' }}>
+                    CampusFix
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* Report Button */}
+              <button
+                onClick={() => { setIsMobileDrawerOpen(false); onOpenReportModal(); }}
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  marginBottom: '24px'
+                }}
+              >
+                <Plus size={18} /> Report New Issue
+              </button>
+
+              {/* Nav Links */}
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <button
+                  onClick={() => { setActiveTab('dashboard'); setIsMobileDrawerOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    fontWeight: activeTab === 'dashboard' ? 700 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    backgroundColor: activeTab === 'dashboard' ? '#1f2937' : 'transparent',
+                    color: activeTab === 'dashboard' ? '#ffffff' : '#9ca3af',
+                    borderLeft: activeTab === 'dashboard' ? '3px solid #0066ff' : '3px solid transparent'
+                  }}
+                >
+                  <LayoutDashboard size={18} /> Dashboard
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('my-issues'); setIsMobileDrawerOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    fontWeight: activeTab === 'my-issues' ? 700 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    backgroundColor: activeTab === 'my-issues' ? '#1f2937' : 'transparent',
+                    color: activeTab === 'my-issues' ? '#ffffff' : '#9ca3af',
+                    borderLeft: activeTab === 'my-issues' ? '3px solid #0066ff' : '3px solid transparent'
+                  }}
+                >
+                  <AlertCircle size={18} /> Active Issues ({activeIssues.length})
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('solved-issues'); setIsMobileDrawerOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    fontWeight: activeTab === 'solved-issues' ? 700 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    backgroundColor: activeTab === 'solved-issues' ? '#1f2937' : 'transparent',
+                    color: activeTab === 'solved-issues' ? '#ffffff' : '#9ca3af',
+                    borderLeft: activeTab === 'solved-issues' ? '3px solid #0066ff' : '3px solid transparent'
+                  }}
+                >
+                  <CheckCircle2 size={18} /> Solved Archive ({solvedIssues.length})
+                </button>
+              </nav>
+            </div>
+
+            {/* Drawer Footer */}
+            <div style={{ borderTop: '1px solid #1f2937', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={() => { setIsMobileDrawerOpen(false); onOpenSettings(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#1f2937',
+                  color: '#ffffff',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <Settings size={18} color="#0066ff" /> Settings & Details
+              </button>
+
+              <button
+                onClick={() => { setIsMobileDrawerOpen(false); onLogout(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'none',
+                  color: '#9ca3af',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <LogOut size={16} /> Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop PC Sidebar - Unchanged for PC View */}
+      <aside className="student-sidebar desktop-sidebar" style={{
         width: '240px',
         height: '100%',
         overflowY: 'auto',
@@ -129,7 +357,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </button>
 
           {/* Sidebar Nav Items */}
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <nav className="student-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <button
               onClick={() => setActiveTab('dashboard')}
               style={{
@@ -196,7 +424,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         </div>
 
         {/* Sidebar Footer with Settings directly above Logout */}
-        <div style={{ borderTop: '1px solid #1f2937', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="student-sidebar-footer" style={{ borderTop: '1px solid #1f2937', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button
             onClick={onOpenSettings}
             style={{
@@ -237,7 +465,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: '24px 32px' }}>
+      <main className="student-main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: '24px 32px' }}>
         {/* Top Header - No Search bar */}
         <div style={{
           display: 'flex',
@@ -433,7 +661,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
 
           {/* 4 Counter Cards */}
-          <div style={{
+          <div className="student-stats-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '14px',
@@ -485,7 +713,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: '4px' }}>
           {/* Dashboard Grid: Recent Issues (Left) + Updates Feed (Right) */}
           {activeTab === 'dashboard' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px' }}>
+          <div className="student-dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px' }}>
             {/* Left: Recent Issues Feed */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -715,9 +943,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flexShrink: 0 }}>
                       {/* Progress Bar preview */}
-                      <div style={{ width: '120px' }}>
+                      <div style={{ width: '100px', minWidth: '80px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, marginBottom: '2px' }}>
                           <span>Progress</span>
                           <span>{issue.progressPercent}%</span>
@@ -727,10 +955,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div>
+                      <div style={{ flexShrink: 0 }}>
                         {issue.status === 'In Progress' && <span className="badge badge-in-progress">In Progress</span>}
                         {issue.status === 'Pending' && <span className="badge badge-pending">Pending</span>}
-                        {issue.status === 'Pending Approval' && <span className="badge badge-approval">Awaiting Approval</span>}
+                        {issue.status === 'Pending Approval' && <span className="badge badge-approval" style={{ whiteSpace: 'nowrap' }}>Awaiting Approval</span>}
                         {issue.status === 'Resolved' && <span className="badge badge-resolved">Resolved</span>}
                       </div>
 

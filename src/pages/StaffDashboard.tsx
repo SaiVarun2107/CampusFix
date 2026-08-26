@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Wrench, Eye, Bell, ShieldCheck
+  Wrench, Eye, Bell, ShieldCheck, LogOut, Menu, X
 } from 'lucide-react';
 import type { Issue, User, NotificationItem, UserRole } from '../types';
 
@@ -12,26 +12,29 @@ interface StaffDashboardProps {
   onRequestApproval: (issueId: string) => void;
   onUpdateProgress: (issueId: string, progress: number, notes: string) => void;
   onOpenSettings: () => void;
+  onLogout: () => void;
   onMarkNotificationRead?: (id: string) => void;
   onMarkAllNotificationsRead?: (role: UserRole, userId?: string) => void;
 }
 
 export const StaffDashboard: React.FC<StaffDashboardProps> = ({
-  currentUser,
+  currentUser: _currentUser,
   issues,
   notifications = [],
   onSelectIssue,
   onRequestApproval,
   onUpdateProgress,
   onOpenSettings,
+  onLogout,
   onMarkNotificationRead,
   onMarkAllNotificationsRead
 }) => {
-  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'approval' | 'in-progress' | 'resolved'>('all');
+  const [filterTab, setFilterTab] = useState<'dashboard' | 'all' | 'pending' | 'approval' | 'in-progress' | 'resolved'>('dashboard');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority' | 'progress'>('newest');
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   const staffNotifications = notifications.filter(n => n.targetRole === 'staff');
   const unreadCount = staffNotifications.filter(n => !n.read).length;
@@ -60,7 +63,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     })
     .sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      if (sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(a.createdAt).getTime();
       if (sortBy === 'priority') {
         const pMap: Record<string, number> = { Urgent: 4, High: 3, Medium: 2, Low: 1 };
         return (pMap[b.priority] || 0) - (pMap[a.priority] || 0);
@@ -70,11 +73,319 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden', padding: '24px 32px', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Fixed Top Section (Header + Stats + Filters) */}
+    <div className="staff-layout" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden', padding: '24px 32px', maxWidth: '1280px', margin: '0 auto' }}>
+      {/* Top Header Bar for Mobile Navigation & Notifications */}
+      <div 
+        className="mobile-top-header"
+        style={{
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          backgroundColor: '#111827',
+          color: '#ffffff',
+          borderBottom: '1px solid #1f2937',
+          margin: '-24px -32px 16px -32px',
+          flexShrink: 0,
+          position: 'relative'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => setIsMobileDrawerOpen(true)}
+            style={{
+              background: '#1f2937',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px 10px',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Menu size={22} />
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Wrench size={18} color="#0066ff" />
+            <span style={{ fontSize: '1rem', fontWeight: 800 }}>Staff Portal</span>
+          </div>
+        </div>
+
+        {/* Top Right Notification Bell Button */}
+        <button
+          onClick={() => setIsNotifOpen(prev => !prev)}
+          style={{
+            background: unreadCount > 0 ? '#7e22ce' : '#1f2937',
+            color: '#ffffff',
+            border: unreadCount > 0 ? '1px solid #a855f7' : '1px solid #374151',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          <Bell size={16} />
+          <span>Approvals ({unreadCount})</span>
+        </button>
+      </div>
+
+      {/* Top Right Notification Dropdown Panel */}
+      {isNotifOpen && (
+        <div 
+          onClick={() => setIsNotifOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 290
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: '56px',
+              right: '12px',
+              width: '340px',
+              maxWidth: '92vw',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #e2e8f0',
+              zIndex: 300,
+              overflow: 'hidden',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+          >
+            <div style={{
+              padding: '14px 18px',
+              backgroundColor: '#faf5ff',
+              borderBottom: '1px solid #e9d5ff',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldCheck size={18} color="#7e22ce" />
+                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#7e22ce' }}>Admin Work Approvals</span>
+              </div>
+              {onMarkAllNotificationsRead && (
+                <button
+                  onClick={() => onMarkAllNotificationsRead('staff')}
+                  style={{ background: 'none', border: 'none', color: '#7e22ce', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+
+            <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
+              {staffNotifications.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                  ✓ No pending notifications.
+                </div>
+              ) : (
+                staffNotifications.map((notif) => {
+                  const matchingIssue = issues.find(i => i.id === notif.issueId || i.ticketNumber === notif.ticketNumber);
+                  return (
+                    <div
+                      key={notif.id}
+                      onClick={() => {
+                        if (onMarkNotificationRead) onMarkNotificationRead(notif.id);
+                        if (matchingIssue) onSelectIssue(matchingIssue);
+                        setIsNotifOpen(false);
+                      }}
+                      style={{
+                        padding: '14px 16px',
+                        borderBottom: '1px solid #f1f5f9',
+                        backgroundColor: notif.read ? '#ffffff' : '#faf5ff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        gap: '12px'
+                      }}
+                    >
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#f3e8ff',
+                        color: '#7e22ce',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        fontSize: '0.9rem'
+                      }}>
+                        🛡️
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                            {notif.title}
+                          </h4>
+                          <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{notif.timestamp}</span>
+                        </div>
+                        <p style={{ fontSize: '0.78rem', color: '#475569', margin: '4px 0 0 0', lineHeight: 1.3 }}>
+                          {notif.message}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-In Mobile Left Drawer for Staff Portal */}
+      {isMobileDrawerOpen && (
+        <div 
+          onClick={() => setIsMobileDrawerOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 200,
+            display: 'flex'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '285px',
+              height: '100%',
+              backgroundColor: '#111827',
+              color: '#9ca3af',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              padding: '24px 20px',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+              animation: 'slideDrawerIn 0.25s ease-out'
+            }}
+          >
+            <div>
+              {/* Drawer Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: '#0f766e',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Wrench size={18} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
+                      CampusFix
+                    </h3>
+                    <span style={{ fontSize: '0.68rem', color: '#6b7280' }}>Staff Operations</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* Navigation Options inside Mobile Drawer */}
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', marginBottom: '10px' }}>
+                Navigation & Views
+              </div>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {[
+                  { key: 'dashboard', label: '📊 Dashboard Overview' },
+                  { key: 'all', label: `📋 All Operations (${stats.total})` },
+                  { key: 'pending', label: `⏳ Pending Requests (${stats.pending})` },
+                  { key: 'approval', label: `🛡️ Awaiting Admin (${stats.pendingApproval})` },
+                  { key: 'in-progress', label: `🔧 Work In Progress (${stats.inProgress})` },
+                  { key: 'resolved', label: `✓ Resolved Operations (${stats.resolved})` }
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => { setFilterTab(tab.key as any); setIsMobileDrawerOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      fontWeight: filterTab === tab.key ? 700 : 500,
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      backgroundColor: filterTab === tab.key ? '#1f2937' : 'transparent',
+                      color: filterTab === tab.key ? '#ffffff' : '#9ca3af',
+                      borderLeft: filterTab === tab.key ? '3px solid #0f766e' : '3px solid transparent'
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Drawer Footer */}
+            <div style={{ borderTop: '1px solid #1f2937', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={() => { setIsMobileDrawerOpen(false); onOpenSettings(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#1f2937',
+                  color: '#ffffff',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <Eye size={18} color="#0f766e" /> Settings & Details
+              </button>
+
+              <button
+                onClick={() => { setIsMobileDrawerOpen(false); onLogout(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'none',
+                  color: '#ef4444',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <LogOut size={16} /> Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fixed Top Section (Header + Stats) */}
       <div style={{ flexShrink: 0 }}>
         {/* Staff Header Banner */}
-        <div style={{
+        <div className="staff-header-banner" style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -96,224 +407,89 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
               <Wrench size={14} /> Maintenance & Technical Staff Portal
             </div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>
-              Staff Work Operations Dashboard
+              {filterTab === 'dashboard' ? 'Staff Work Operations Dashboard' :
+               filterTab === 'pending' ? 'Pending Maintenance Requests' :
+               filterTab === 'approval' ? 'Awaiting Admin Approval' :
+               filterTab === 'in-progress' ? 'Work In Progress' :
+               filterTab === 'resolved' ? 'Resolved Operations Archive' : 'All Operations Inventory'}
             </h1>
             <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
               Manage campus reported issues, request admin work approvals, and update resolution progress.
             </p>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
-            {/* Admin Approval Notification Symbol for Staff */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setIsNotifOpen(prev => !prev)}
-                className="btn btn-secondary"
-                style={{ 
-                  padding: '8px 14px', 
-                  fontSize: '0.85rem', 
-                  fontWeight: 700, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px',
-                  borderColor: unreadCount > 0 ? '#7e22ce' : '#cbd5e1',
-                  backgroundColor: unreadCount > 0 ? '#faf5ff' : '#ffffff',
-                  color: unreadCount > 0 ? '#7e22ce' : '#475569',
-                  position: 'relative'
-                }}
-              >
-                <Bell size={16} color={unreadCount > 0 ? '#7e22ce' : '#475569'} />
-                <span>Admin Approvals</span>
-                {unreadCount > 0 && (
-                  <span style={{
-                    backgroundColor: '#7e22ce',
-                    color: '#ffffff',
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    padding: '2px 7px',
-                    borderRadius: '10px',
-                    boxShadow: '0 2px 6px rgba(126, 34, 206, 0.4)'
-                  }}>
-                    {unreadCount} NEW
-                  </span>
-                )}
-              </button>
-
-              {/* Staff Notifications Dropdown Panel */}
-              {isNotifOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: '46px',
-                  right: '0',
-                  width: '380px',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-                  border: '1px solid #e2e8f0',
-                  zIndex: 100,
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    padding: '14px 18px',
-                    backgroundColor: '#faf5ff',
-                    borderBottom: '1px solid #e9d5ff',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <ShieldCheck size={18} color="#7e22ce" />
-                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#7e22ce' }}>Admin Work Approvals</span>
-                    </div>
-                    {onMarkAllNotificationsRead && (
-                      <button
-                        onClick={() => onMarkAllNotificationsRead('staff')}
-                        style={{ background: 'none', border: 'none', color: '#7e22ce', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
-                    {staffNotifications.length === 0 ? (
-                      <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        No notifications yet.
-                      </div>
-                    ) : (
-                      staffNotifications.map((notif) => {
-                        const matchingIssue = issues.find(i => i.id === notif.issueId || i.ticketNumber === notif.ticketNumber);
-                        return (
-                          <div
-                            key={notif.id}
-                            onClick={() => {
-                              if (onMarkNotificationRead) onMarkNotificationRead(notif.id);
-                              if (matchingIssue) onSelectIssue(matchingIssue);
-                              setIsNotifOpen(false);
-                            }}
-                            style={{
-                              padding: '14px 16px',
-                              borderBottom: '1px solid #f1f5f9',
-                              backgroundColor: notif.read ? '#ffffff' : '#faf5ff',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              gap: '12px'
-                            }}
-                          >
-                            <div style={{
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '50%',
-                              backgroundColor: '#f3e8ff',
-                              color: '#7e22ce',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                              fontSize: '0.9rem'
-                            }}>
-                              🛡️
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                                  {notif.title}
-                                </h4>
-                                <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{notif.timestamp}</span>
-                              </div>
-                              <p style={{ fontSize: '0.78rem', color: '#475569', margin: '4px 0 0 0', lineHeight: 1.3 }}>
-                                {notif.message}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>
-              Logged in as: <b>{currentUser.name}</b> ({currentUser.designation || 'Staff'})
-            </span>
-            <button
-              onClick={onOpenSettings}
-              className="btn btn-secondary"
-              style={{ padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              Settings & Details
-            </button>
-          </div>
         </div>
 
-        {/* 5 Stats Cards */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: '12px',
-          marginBottom: '20px'
-        }}>
-          {/* Total Issues */}
-          <div className="card" style={{ padding: '16px' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>
-              TOTAL ISSUES
+        {/* 5 Stats Cards - Displayed ONLY on main Dashboard tab */}
+        {filterTab === 'dashboard' && (
+          <div className="staff-stats-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: '12px',
+            marginBottom: '20px'
+          }}>
+            {/* Total Issues */}
+            <div className="card" style={{ padding: '16px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>
+                TOTAL ISSUES
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                {stats.total}
+              </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
-              {stats.total}
-            </div>
-          </div>
 
-          {/* Pending */}
-          <div className="card" style={{ padding: '16px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c' }}>
-              ⏳ PENDING
+            {/* Pending */}
+            <div className="card" style={{ padding: '16px', backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#c2410c' }}>
+                ⏳ PENDING
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#c2410c', marginTop: '2px' }}>
+                {stats.pending}
+              </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#c2410c', marginTop: '2px' }}>
-              {stats.pending}
-            </div>
-          </div>
 
-          {/* Pending Admin Approval */}
-          <div className="card" style={{ padding: '16px', backgroundColor: '#faf5ff', borderColor: '#f3e8ff' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#7e22ce' }}>
-              🛡️ AWAITING ADMIN
+            {/* Pending Admin Approval */}
+            <div className="card" style={{ padding: '16px', backgroundColor: '#faf5ff', borderColor: '#f3e8ff' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#7e22ce' }}>
+                🛡️ AWAITING ADMIN
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7e22ce', marginTop: '2px' }}>
+                {stats.pendingApproval}
+              </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7e22ce', marginTop: '2px' }}>
-              {stats.pendingApproval}
-            </div>
-          </div>
 
-          {/* In Progress */}
-          <div className="card" style={{ padding: '16px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8' }}>
-              🔧 WORK IN PROGRESS
+            {/* In Progress */}
+            <div className="card" style={{ padding: '16px', backgroundColor: '#eff6ff', borderColor: '#dbeafe' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8' }}>
+                🔧 WORK IN PROGRESS
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1d4ed8', marginTop: '2px' }}>
+                {stats.inProgress}
+              </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1d4ed8', marginTop: '2px' }}>
-              {stats.inProgress}
-            </div>
-          </div>
 
-          {/* Resolved */}
-          <div className="card" style={{ padding: '16px', backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>
-              ✓ RESOLVED
-            </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#15803d', marginTop: '2px' }}>
-              {stats.resolved}
+            {/* Resolved */}
+            <div className="card" style={{ padding: '16px', backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>
+                ✓ RESOLVED
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#15803d', marginTop: '2px' }}>
+                {stats.resolved}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Filter Tabs & Minimal Dropdowns Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '16px'
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '12px'
         }}>
           {/* Filter Pills */}
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className="staff-filter-tabs" style={{ display: 'flex', gap: '6px' }}>
             {[
               { key: 'all', label: `All (${stats.total})` },
               { key: 'pending', label: `Pending (${stats.pending})` },
@@ -341,7 +517,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           </div>
 
           {/* Minimal Dropdowns Bar - NO Search */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="staff-filter-dropdowns" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {/* Category Dropdown */}
             <select
               className="form-select"
@@ -394,7 +570,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
         {filteredIssues.map((issue) => (
           <div
             key={issue.id}
-            className="card"
+            className="card staff-issue-card"
             style={{
               padding: '24px',
               borderRadius: '16px',

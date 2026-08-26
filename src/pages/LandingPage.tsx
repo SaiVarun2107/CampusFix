@@ -13,15 +13,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div style={{ backgroundColor: '#ffffff', minHeight: 'calc(100vh - 64px)' }}>
       {/* Hero Section */}
-      <section style={{
-        maxWidth: '1280px',
-        margin: '0 auto',
-        padding: '60px 24px 80px 24px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '48px',
-        alignItems: 'center'
-      }}>
+      <section 
+        className="hero-grid"
+        style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '60px 24px 80px 24px',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '48px',
+          alignItems: 'center'
+        }}
+      >
         {/* Left Text Column */}
         <div>
           {/* Announcement Badge */}
@@ -52,31 +55,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Main Headline */}
-          <h1 style={{
-            fontSize: '3.5rem',
-            fontWeight: 800,
-            lineHeight: 1.1,
-            color: '#0f172a',
-            letterSpacing: '-0.03em',
-            marginBottom: '20px'
-          }}>
+          <h1 
+            className="hero-title"
+            style={{
+              fontSize: '3.5rem',
+              fontWeight: 800,
+              lineHeight: 1.1,
+              color: '#0f172a',
+              letterSpacing: '-0.03em',
+              marginBottom: '20px'
+            }}
+          >
             Report campus issues.{' '}
             <span style={{ color: '#0066ff' }}>Track progress.</span>{' '}
             Improve your campus.
           </h1>
 
-          <p style={{
-            fontSize: '1.1rem',
-            color: '#64748b',
-            lineHeight: 1.6,
-            marginBottom: '32px',
-            maxWidth: '520px'
-          }}>
+          <p 
+            className="hero-subtitle"
+            style={{
+              fontSize: '1.1rem',
+              color: '#64748b',
+              lineHeight: 1.6,
+              marginBottom: '32px',
+              maxWidth: '520px'
+            }}
+          >
             A streamlined, transparent platform for students and faculty to report infrastructure problems and for maintenance teams to resolve them efficiently.
           </p>
 
           {/* Hero Buttons */}
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div className="hero-buttons" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <button
               onClick={onNavigateToLogin}
               className="btn btn-dark"
@@ -107,7 +116,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Right Photo Column matching Screenshot 1 */}
-        <div style={{ position: 'relative' }}>
+        <div className="hero-image-col" style={{ position: 'relative' }}>
           <div style={{
             borderRadius: '24px',
             overflow: 'hidden',
@@ -122,19 +131,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Floating Ticket Notification Overlay */}
-          <div style={{
-            position: 'absolute',
-            bottom: '24px',
-            right: '24px',
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            padding: '16px 20px',
-            boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.15)',
-            border: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px'
-          }}>
+          <div 
+            className="floating-ticket-overlay"
+            style={{
+              position: 'absolute',
+              bottom: '24px',
+              right: '24px',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.15)',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px'
+            }}
+          >
             <div style={{
               width: '40px',
               height: '40px',
@@ -167,18 +179,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         backgroundColor: '#f8fafc',
         borderTop: '1px solid #e2e8f0',
         borderBottom: '1px solid #e2e8f0',
-        padding: '80px 24px'
+        padding: '60px 24px'
       }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '48px' }}>
+          <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '40px' }}>
             How it Works
           </h2>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '32px'
-          }}>
+          <div 
+            className="how-it-works-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '32px'
+            }}
+          >
             {/* Step 1 */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{
@@ -258,25 +273,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* Footer */}
-      <footer style={{
-        maxWidth: '1280px',
-        margin: '0 auto',
-        padding: '32px 24px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        fontSize: '0.85rem',
-        color: '#64748b'
-      }}>
+      <footer 
+        className="landing-footer"
+        style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '32px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '0.85rem',
+          color: '#64748b',
+          borderTop: '1px solid #f1f5f9'
+        }}
+      >
         <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>
           CampusFix
         </div>
-        <div style={{ display: 'flex', gap: '24px' }}>
-          <span>Privacy Policy</span>
-          <span>Terms of Service</span>
-          <span>Contact Support</span>
+        <div className="landing-footer-links" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <span style={{ cursor: 'pointer' }}>Privacy Policy</span>
+          <span style={{ cursor: 'pointer' }}>Terms of Service</span>
+          <span style={{ cursor: 'pointer' }}>Contact Support</span>
         </div>
-        <div>
+        <div style={{ fontSize: '0.78rem' }}>
           © 2026 CampusFix Infrastructure Management
         </div>
       </footer>
